@@ -7,6 +7,12 @@ on:
     branches: [ main ]
 
 jobs:
+  runs-on: ubuntu-latest
+  permissions:
+    seccurity-events: write
+    actions: read
+    contents: read
+    packages: write
   build:
     uses: ./.github/workflows/build.yml
     secrets: inherit

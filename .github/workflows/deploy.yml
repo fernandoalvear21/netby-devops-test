@@ -28,6 +28,13 @@ jobs:
       - name: Verify JAR exists
         run: ls -la target/
 
+      - name: Install Java
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          script: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jdk
+
       - name: Transfer JAR file
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -53,7 +60,8 @@ jobs:
                 sleep 5
               fi
             fi
-            
+            cd /opt/app
+            nohup /usr/bin/java -jar app.jar > app.log 2>&1 & echo $! > pid.file            
             # Crear directorios
             sudo mkdir -p /opt/app
             

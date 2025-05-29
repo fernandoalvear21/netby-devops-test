@@ -37,9 +37,10 @@ jobs:
           script: |
             sudo apt-get update
             sudo apt-get install -y openjdk-11-jdk
+            sudo apt-get install -y unzip
 
-      - name: Transfer JAR file
-        uses: appleboy/scp-action@v0.1.4
+      - name: Transfer files
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -47,6 +48,14 @@ jobs:
           source: "target/demo-0.0.1-SNAPSHOT.jar"
           target: "/tmp/app.jar"
           strip_components: 1
+
+      - name: Verify transfer
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          script: |
+            ls -la /tmp/
+            file /tmp/app.jar
+            unzip -t /tmp/app.jar
 
       - name: Deploy application
         uses: appleboy/ssh-action@v1.0.0
@@ -63,15 +72,14 @@ jobs:
                 sleep 5
               fi
             fi
-            cd /opt/app
-            nohup /usr/bin/java -jar app.jar > app.log 2>&1 & echo $! > pid.file            
-            # Crear directorios
-            sudo mkdir -p /opt/app
+            
+            # Limpiar directorio existente
+            sudo rm -rf /opt/app/*
             
             # Mover JAR y ejecutar
             sudo mv /tmp/app.jar /opt/app/
             cd /opt/app
-            nohup java -jar app.jar > app.log 2>&1 & echo $! > pid.file
+            nohup /usr/bin/java -jar app.jar > app.log 2>&1 & echo $! > pid.file
             
             # Verificar health check
             sleep 30

@@ -18,7 +18,7 @@ jobs:
           java-version: '11'
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: 'java'
           queries: security-extended  
@@ -27,6 +27,6 @@ jobs:
         run: mvn compile -DskipTests  
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         with:
           category: '/language:java'

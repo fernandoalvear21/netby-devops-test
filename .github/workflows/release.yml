@@ -34,6 +34,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: Dockerfile.builder
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-demo:${{ inputs.version }}

@@ -1,0 +1,115 @@
+name: Deploy to Azure
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        type: string
+        default: '1.0.0'
+    secrets:
+      SSH_HOST:
+        required: true
+      SSH_USERNAME:
+        required: true
+      SSH_PASSWORD:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target/
+
+      - name: Create deployment script
+        run: |
+          cat << 'EOF' > deploy.sh
+          #!/bin/bash
+          set -e
+
+          # Variables
+          APP_NAME="spring-demo"
+          JAR_FILE="app.jar"
+          BACKUP_DIR="/opt/backups"
+          APP_DIR="/opt/app"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+          # Crear directorios si no existen
+          mkdir -p "$BACKUP_DIR"
+          mkdir -p "$APP_DIR"
+
+          # Detener la aplicación si está corriendo
+          if [ -f "$APP_DIR/pid.file" ]; then
+            pid=$(cat "$APP_DIR/pid.file")
+            if kill -0 "$pid" 2>/dev/null; then
+              echo "Deteniendo aplicación existente..."
+              kill "$pid"
+              sleep 5
+            fi
+          fi
+
+          # Realizar backup
+          if [ -f "$APP_DIR/$JAR_FILE" ]; then
+            echo "Creando backup..."
+            cp "$APP_DIR/$JAR_FILE" "$BACKUP_DIR/${APP_NAME}_${TIMESTAMP}.jar"
+          fi
+
+          # Copiar nuevo archivo
+          echo "Desplegando nueva versión..."
+          cp "$JAR_FILE" "$APP_DIR/$JAR_FILE"
+
+          # Iniciar aplicación
+          echo "Iniciando aplicación..."
+          cd "$APP_DIR"
+          nohup java -jar "$JAR_FILE" > app.log 2>&1 & echo $! > pid.file
+
+          # Esperar a que la aplicación inicie
+          echo "Esperando a que la aplicación inicie..."
+          sleep 30
+
+          # Verificar health check
+          for i in {1..5}; do
+            if curl -s http://localhost:8080/health | grep -q '"status":"UP"'; then
+              echo "Aplicación desplegada exitosamente"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "Error: La aplicación no respondió correctamente al health check"
+          exit 1
+          EOF
+
+          chmod +x deploy.sh
+
+      - name: Transfer files and deploy
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "target/app.jar,deploy.sh"
+          target: "~"
+
+      - name: Execute deployment
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd ~
+            ./deploy.sh
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            curl -s http://localhost:8080/health

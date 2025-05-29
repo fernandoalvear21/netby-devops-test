@@ -33,7 +33,7 @@ jobs:
 
           # Variables
           APP_NAME="spring-demo"
-          JAR_FILE="app.jar"
+          JAR_FILE="target/app.jar"
           BACKUP_DIR="/opt/backups"
           APP_DIR="/opt/app"
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -61,13 +61,13 @@ jobs:
 
           # Copiar nuevo archivo
           echo "Desplegando nueva versión..."
-          sudo cp "$JAR_FILE" "$APP_DIR/$JAR_FILE"
-          sudo chown $USER:$USER "$APP_DIR/$JAR_FILE"
+          sudo cp "$JAR_FILE" "$APP_DIR/app.jar"
+          sudo chown $USER:$USER "$APP_DIR/app.jar"
 
           # Iniciar aplicación
           echo "Iniciando aplicación..."
           cd "$APP_DIR"
-          nohup java -jar "$JAR_FILE" > app.log 2>&1 & echo $! > pid.file
+          nohup java -jar app.jar > app.log 2>&1 & echo $! > pid.file
 
           # Esperar a que la aplicación inicie
           echo "Esperando a que la aplicación inicie..."

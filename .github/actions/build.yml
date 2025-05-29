@@ -1,0 +1,32 @@
+name: Build Template
+
+on:
+  workflow_call:
+    inputs:
+      java_version:
+        required: false
+        type: string
+        default: '11'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: Build with Docker
+        run: |
+          docker build -f Dockerfile.builder --target builder -t spring-builder:latest .
+          docker run --name spring-builder spring-builder:latest mvn clean package -DskipTests
+          docker cp spring-builder:/app/target/ ./target/
+          docker rm spring-builder
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-jar
+          path: target/*.jar

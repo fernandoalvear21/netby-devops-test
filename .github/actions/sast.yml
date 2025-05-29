@@ -1,0 +1,35 @@
+name: SAST Template
+
+on:
+  workflow_call:
+
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          
+      - name: Run SAST Analysis
+        run: |
+          # Instalación de herramientas de análisis estático
+          curl -sSL https://github.com/spotbugs/spotbugs/releases/download/4.7.3/spotbugs-4.7.3.tgz -o spotbugs.tgz
+          tar -xf spotbugs.tgz
+          
+          # Ejecución del análisis
+          ./spotbugs-*/bin/spotbugs -textui -effort:max -xml:withMessages -output spotbugs-result.xml src/
+          
+          # Verificación de resultados
+          if [ -s spotbugs-result.xml ]; then
+            echo "Se encontraron problemas en el análisis estático"
+            cat spotbugs-result.xml
+            exit 0 
+          else
+            echo "No se encontraron problemas en el análisis estático"
+          fi

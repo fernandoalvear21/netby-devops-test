@@ -70,7 +70,7 @@ jobs:
             # Mover JAR y ejecutar
             sudo mv /tmp/app.jar /opt/app/
             cd /opt/app
-            nohup /usr/bin/java -jar app.jar > app.log 2>&1 & echo $! > pid.file
+            nohup /usr/bin/java -jar app.jar/demo-0.0.1-SNAPSHOT.jar > app.log 2>&1 & echo $! > pid.file
             
             # Verificar health check
             sleep 30

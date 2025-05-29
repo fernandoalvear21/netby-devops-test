@@ -25,97 +25,42 @@ jobs:
           name: app-jar
           path: target/
 
-      - name: Create deployment script
-        run: |
-          cat << 'EOF' > deploy.sh
-          #!/bin/bash
-          set -e
-
-          # Variables
-          APP_NAME="spring-demo"
-          JAR_FILE="app.jar"
-          BACKUP_DIR="/opt/backups"
-          APP_DIR="/opt/app"
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-          # Crear directorios si no existen
-          sudo mkdir -p "$BACKUP_DIR"
-          sudo mkdir -p "$APP_DIR"
-          sudo chown -R $USER:$USER "$BACKUP_DIR" "$APP_DIR"
-
-          # Detener la aplicación si está corriendo
-          if [ -f "$APP_DIR/pid.file" ]; then
-            pid=$(cat "$APP_DIR/pid.file")
-            if kill -0 "$pid" 2>/dev/null; then
-              echo "Deteniendo aplicación existente..."
-              sudo kill "$pid"
-              sleep 5
-            fi
-          fi
-
-          # Realizar backup
-          if [ -f "$APP_DIR/$JAR_FILE" ]; then
-            echo "Creando backup..."
-            sudo cp "$APP_DIR/$JAR_FILE" "$BACKUP_DIR/${APP_NAME}_${TIMESTAMP}.jar"
-          fi
-
-          # Copiar nuevo archivo
-          echo "Desplegando nueva versión..."
-          sudo cp "$JAR_FILE" "$APP_DIR/app.jar"
-          sudo chown $USER:$USER "$APP_DIR/app.jar"
-
-          # Iniciar aplicación
-          echo "Iniciando aplicación..."
-          cd "$APP_DIR"
-          nohup java -jar app.jar > app.log 2>&1 & echo $! > pid.file
-
-          # Esperar a que la aplicación inicie
-          echo "Esperando a que la aplicación inicie..."
-          sleep 30
-
-          # Verificar health check
-          for i in {1..5}; do
-            if curl -s http://localhost:8080/health | grep -q '"status":"UP"'; then
-              echo "Aplicación desplegada exitosamente"
-              exit 0
-            fi
-            sleep 10
-          done
-
-          echo "Error: La aplicación no respondió correctamente al health check"
-          exit 1
-          EOF
-
-          chmod +x deploy.sh
-
       - name: Verify JAR exists
-        run: |
-          ls -la target/
-          [ -f target/app.jar ] || exit 1
+        run: ls -la target/
 
-      - name: Transfer files
+      - name: Transfer JAR file
         uses: appleboy/scp-action@v0.1.4
         with:
-          source: "target/app.jar,deploy.sh"
-          target: "/home/azureuser/"
-          strip_components: 1 
-          target: "/tmp/deployments/" 
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "target/app.jar"
+          target: "/tmp/"
 
-      - name: Execute deployment
+      - name: Deploy application
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            cd ~
-            ./deploy.sh
-
-      - name: Verify deployment
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
+            # Detener aplicación si está corriendo
+            if [ -f "/opt/app/pid.file" ]; then
+              pid=$(cat "/opt/app/pid.file")
+              if kill -0 "$pid" 2>/dev/null; then
+                sudo kill "$pid"
+                sleep 5
+              fi
+            fi
+            
+            # Crear directorios
+            sudo mkdir -p /opt/app
+            
+            # Mover JAR y ejecutar
+            sudo mv /tmp/app.jar /opt/app/
+            cd /opt/app
+            nohup java -jar app.jar > app.log 2>&1 & echo $! > pid.file
+            
+            # Verificar health check
+            sleep 30
             curl -s http://localhost:8080/health

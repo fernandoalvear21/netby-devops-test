@@ -8,16 +8,16 @@ on:
 
 jobs:
   build:
-    uses: ./.github/actions/build.yml@main
+    uses: ./.github/workflows/build.yml@main
     secrets: inherit
 
   sast:
     needs: build
-    uses: ./.github/actions/sast.yml@main
+    uses: ./.github/workflows/sast.yml@main
     secrets: inherit
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build, sast]
-    uses: ./.github/actions/release.yml@main
+    uses: ./.github/workflows/release.yml@main
     secrets: inherit

@@ -33,8 +33,7 @@ jobs:
 
           # Variables
           APP_NAME="spring-demo"
-          DEPLOY_DIR="/tmp/deployments"
-          JAR_FILE="$DEPLOY_DIR/app.jar"
+          JAR_FILE="app.jar"
           BACKUP_DIR="/opt/backups"
           APP_DIR="/opt/app"
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -89,18 +88,16 @@ jobs:
 
           chmod +x deploy.sh
 
-      - name: Verify files before transfer
+      - name: Verify JAR exists
         run: |
           ls -la target/
-          ls -la
+          [ -f target/app.jar ] || exit 1
 
-      - name: Transfer files and deploy
+      - name: Transfer files
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          source: "${{ github.workspace }}/target/app.jar,deploy.sh"
+          source: "target/app.jar,deploy.sh"
+          target: "/home/azureuser/"
           strip_components: 1 
           target: "/tmp/deployments/" 
 

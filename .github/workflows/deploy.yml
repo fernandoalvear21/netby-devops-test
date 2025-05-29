@@ -39,15 +39,16 @@ jobs:
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
           # Crear directorios si no existen
-          mkdir -p "$BACKUP_DIR"
-          mkdir -p "$APP_DIR"
+          sudo mkdir -p "$BACKUP_DIR"
+          sudo mkdir -p "$APP_DIR"
+          sudo chown -R $USER:$USER "$BACKUP_DIR" "$APP_DIR"
 
           # Detener la aplicación si está corriendo
           if [ -f "$APP_DIR/pid.file" ]; then
             pid=$(cat "$APP_DIR/pid.file")
             if kill -0 "$pid" 2>/dev/null; then
               echo "Deteniendo aplicación existente..."
-              kill "$pid"
+              sudo kill "$pid"
               sleep 5
             fi
           fi
@@ -55,12 +56,13 @@ jobs:
           # Realizar backup
           if [ -f "$APP_DIR/$JAR_FILE" ]; then
             echo "Creando backup..."
-            cp "$APP_DIR/$JAR_FILE" "$BACKUP_DIR/${APP_NAME}_${TIMESTAMP}.jar"
+            sudo cp "$APP_DIR/$JAR_FILE" "$BACKUP_DIR/${APP_NAME}_${TIMESTAMP}.jar"
           fi
 
           # Copiar nuevo archivo
           echo "Desplegando nueva versión..."
-          cp "$JAR_FILE" "$APP_DIR/$JAR_FILE"
+          sudo cp "$JAR_FILE" "$APP_DIR/$JAR_FILE"
+          sudo chown $USER:$USER "$APP_DIR/$JAR_FILE"
 
           # Iniciar aplicación
           echo "Iniciando aplicación..."

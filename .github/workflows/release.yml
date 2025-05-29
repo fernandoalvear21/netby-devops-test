@@ -6,7 +6,7 @@ on:
       version:
         required: false
         type: string
-        default: 'latest'
+        default: '1.0.0'
 
 jobs:
   release:
@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
         
       - name: Download artifact
         uses: actions/download-artifact@v4

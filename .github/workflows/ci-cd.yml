@@ -25,3 +25,8 @@ jobs:
     needs: [build, sast]
     uses: ./.github/workflows/release.yml
     secrets: inherit
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      actions: read

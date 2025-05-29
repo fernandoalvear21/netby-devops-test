@@ -68,7 +68,7 @@ jobs:
             sudo rm -rf /opt/app/*
             
             # Mover JAR y ejecutar
-            sudo mv /tmp/app.jar /opt/app/
+            sudo mv /tmp/app.jar/* /opt/app/
             cd /opt/app
             nohup /usr/bin/java -jar app.jar/demo-0.0.1-SNAPSHOT.jar > app.log 2>&1 & echo $! > pid.file
             

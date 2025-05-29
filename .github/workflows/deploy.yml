@@ -47,15 +47,6 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           source: "target/demo-0.0.1-SNAPSHOT.jar"
           target: "/tmp/app.jar"
-          strip_components: 1
-
-      - name: Verify transfer
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          script: |
-            ls -la /tmp/
-            file /tmp/app.jar
-            unzip -t /tmp/app.jar
 
       - name: Deploy application
         uses: appleboy/ssh-action@v1.0.0
